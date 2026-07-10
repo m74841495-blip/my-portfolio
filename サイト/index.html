@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mario — 音と絵</title>
+<meta name="description" content="イラストレーション・楽曲制作の作品集。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Noto+Sans+JP:wght@300;400;500&family=Unbounded:wght@300;700&display=swap" rel="stylesheet">
+
+<style>
+/* ===== TOKENS ===== */
+:root {
+  --ink:   #0e0d13;
+  --paper: #f2ede4;
+  --red:   #d63c1e;
+  --cyan:  #1aa6b0;
+  --yell:  #e8d32e;
+  --indigo:#2b2b8a;
+  --muted: #6a6472;
+  --rule:  rgba(14,13,19,.12);
+
+  --disp:  'Unbounded', sans-serif;
+  --body:  'Noto Sans JP', sans-serif;
+  --mono:  'Space Mono', monospace;
+}
+
+/* ===== RESET ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  line-height: 1.75;
+  cursor: none;          /* カスタムカーソル */
+  overflow-x: hidden;
+}
+a { color: inherit; text-decoration: none; }
+img { display: block; max-width: 100%; }
+button { font: inherit; cursor: none; border: none; background: none; }
+::selection { background: var(--red); color: var(--paper); }
+
+/* ===== CUSTOM CURSOR ===== */
+#cursor {
+  position: fixed;
+  top: 0; left: 0;
+  pointer-events: none;
+  z-index: 9999;
+  transition: opacity .15s;
+}
+#cursor .ring {
+  position: absolute;
+  width: 32px; height: 32px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width .18s, height .18s, border-color .18s, background .18s;
+  mix-blend-mode: multiply;
+}
+#cursor .dot {
+  position: absolute;
+  width: 6px; height: 6px;
+  background: var(--red);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+body.hover-link #cursor .ring {
+  width: 48px; height: 48px;
+  border-color: var(--red);
+  background: rgba(214,60,30,.08);
+}
+
+/* ===== CLICK BURST ===== */
+.burst {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9998;
+  border-radius: 50%;
+  width: 8px; height: 8px;
+  transform: translate(-50%, -50%) scale(1);
+  animation: burst-anim .45s ease-out forwards;
+}
+@keyframes burst-anim {
+  0%   { transform: translate(-50%,-50%) scale(1);  opacity: 1; }
+  100% { transform: translate(-50%,-50%) scale(9);  opacity: 0; }
+}
+
+/* ===== LAYOUT ===== */
+.wrap { max-width: 1100px; margin: 0 auto; padding: 0 32px; }
+
+/* ===== HEADER ===== */
+header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  background: var(--paper);
+  border-bottom: 1.5px solid var(--ink);
+  height: 60px;
+}
+header .inner {
+  display: flex; align-items: center; justify-content: space-between;
+  max-width: 1100px; margin: 0 auto; padding: 0 32px; height: 100%;
+}
+.logo {
+  font-family: var(--mono);
+  font-size: .82rem;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+/* 記号的ロゴ — 名前を直接出さない */
+.logo .mark {
+  display: inline-block;
+  width: 20px; height: 20px;
+  border: 2px solid var(--red);
+  border-radius: 50%;
+  vertical-align: middle;
+  margin-right: 8px;
+  position: relative;
+}
+.logo .mark::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  background: var(--red);
+  border-radius: 50%;
+}
+
+nav ul { list-style: none; display: flex; gap: 32px; }
+nav a {
+  font-family: var(--mono);
+  font-size: .7rem;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-bottom: 2px;
+  border-bottom: 1.5px solid transparent;
+  transition: color .2s, border-color .2s;
+}
+nav a:hover { color: var(--ink); border-bottom-color: var(--red); }
+
+/* ===== HERO ===== */
+.hero {
+  min-height: 100svh;
+  padding-top: 60px;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 背景のスクリーントーン風ドットグリッド */
+.hero::before {
+  content: "";
+  position: absolute; inset: 0;
+  background-image: radial-gradient(circle, var(--ink) 1px, transparent 1px);
+  background-size: 22px 22px;
+  opacity: .06;
+  pointer-events: none;
+}
+
+.hero-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 80px 32px 40px;
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+  position: relative;
+  z-index: 2;
+}
+
+/* 大きな背景文字（"まりお"を直接出さない） */
+.hero-bg-text {
+  position: absolute;
+  right: -20px; top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--disp);
+  font-size: clamp(8rem, 18vw, 16rem);
+  font-weight: 700;
+  letter-spacing: -.04em;
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgba(14,13,19,.08);
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+  z-index: 1;
+}
+
+.hero-eyebrow {
+  font-family: var(--mono);
+  font-size: .72rem;
+  letter-spacing: .3em;
+  color: var(--muted);
+  margin-bottom: 24px;
+}
+.hero-eyebrow .tag {
+  display: inline-block;
+  padding: 2px 10px;
+  border: 1px solid var(--muted);
+  border-radius: 999px;
+  margin-right: 8px;
+}
+
+.hero h1 {
+  font-family: var(--disp);
+  font-size: clamp(2.6rem, 8vw, 6.5rem);
+  font-weight: 700;
+  letter-spacing: -.02em;
+  line-height: 1.05;
+}
+/* カラー重ね刷り風タイポグラフィ */
+.hero h1 .line-a { display: block; color: var(--ink); }
+.hero h1 .line-b {
+  display: block;
+  color: transparent;
+  -webkit-text-stroke: 2px var(--red);
+  position: relative;
+}
+.hero h1 .line-b::before {
+  content: attr(data-txt);
+  position: absolute;
+  left: 4px; top: 4px;
+  color: transparent;
+  -webkit-text-stroke: 2px var(--cyan);
+  opacity: .5;
+}
+
+.hero-desc {
+  margin-top: 32px;
+  font-size: 1rem;
+  color: var(--muted);
+  max-width: 460px;
+}
+
+.hero-cta {
+  display: flex; gap: 16px; flex-wrap: wrap;
+  margin-top: 48px;
+}
+.btn {
+  font-family: var(--mono);
+  font-size: .75rem;
+  letter-spacing: .12em;
+  padding: 12px 28px;
+  border: 2px solid var(--ink);
+  text-transform: uppercase;
+  transition: background .2s, color .2s;
+  display: inline-flex; align-items: center; gap: 10px;
+}
+.btn:hover { background: var(--ink); color: var(--paper); }
+.btn.solid { background: var(--red); color: var(--paper); border-color: var(--red); }
+.btn.solid:hover { background: var(--ink); border-color: var(--ink); }
+
+/* hero 下部のカラーストリップ */
+.hero-strip {
+  display: flex;
+  height: 8px;
+  width: 100%;
+}
+.hero-strip span { flex: 1; }
+.hero-strip span:nth-child(1) { background: var(--red); }
+.hero-strip span:nth-child(2) { background: var(--cyan); }
+.hero-strip span:nth-child(3) { background: var(--yell); }
+.hero-strip span:nth-child(4) { background: var(--indigo); }
+.hero-strip span:nth-child(5) { background: var(--ink); }
+
+/* ===== SECTION SHARED ===== */
+section { padding: 100px 0; }
+.section-label {
+  font-family: var(--mono);
+  font-size: .68rem;
+  letter-spacing: .25em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 40px;
+}
+.section-label::after {
+  content: ""; flex: 1; height: 1px; background: var(--rule);
+}
+h2.section-title {
+  font-family: var(--disp);
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-weight: 700;
+  letter-spacing: -.02em;
+  margin-bottom: 48px;
+}
+
+/* ===== PROFILE ===== */
+#profile { background: var(--ink); color: var(--paper); }
+#profile .section-label { color: rgba(242,237,228,.4); }
+#profile .section-label::after { background: rgba(242,237,228,.12); }
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 64px;
+  align-items: start;
+}
+.profile-text p { color: rgba(242,237,228,.75); font-size: .97rem; margin-bottom: 16px; }
+.profile-text strong { color: var(--paper); font-weight: 500; }
+.profile-text .kw {
+  display: inline-block;
+  padding: 1px 8px;
+  font-family: var(--mono);
+  font-size: .72rem;
+  letter-spacing: .1em;
+  border: 1px solid rgba(242,237,228,.3);
+  margin-right: 6px; margin-bottom: 6px;
+  color: rgba(242,237,228,.6);
+}
+
+.profile-panel {
+  display: flex; flex-direction: column; gap: 12px;
+}
+.profile-stat {
+  padding: 16px 20px;
+  border: 1px solid rgba(242,237,228,.12);
+  display: flex; justify-content: space-between; align-items: baseline;
+}
+.profile-stat .ps-label {
+  font-family: var(--mono); font-size: .68rem; letter-spacing: .15em;
+  color: rgba(242,237,228,.4);
+}
+.profile-stat .ps-val {
+  font-family: var(--mono); font-size: .88rem;
+  color: var(--cyan);
+}
+
+/* ===== WORKS 作品集 ===== */
+#works { background: var(--paper); }
+
+.works-filter {
+  display: flex; gap: 2px; margin-bottom: 40px; flex-wrap: wrap;
+}
+.filter-btn {
+  font-family: var(--mono);
+  font-size: .7rem;
+  letter-spacing: .15em;
+  padding: 8px 20px;
+  border: 1.5px solid var(--ink);
+  text-transform: uppercase;
+  transition: background .15s, color .15s;
+  color: var(--muted);
+}
+.filter-btn.active,
+.filter-btn:hover {
+  background: var(--ink); color: var(--paper);
+}
+
+.works-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5px;
+  background: var(--ink);
+}
+
+.work-card {
+  background: var(--paper);
+  overflow: hidden;
+  position: relative;
+  cursor: none;
+}
+.work-card[hidden] { display: none; }
+
+.work-thumb {
+  width: 100%; aspect-ratio: 1;
+  overflow: hidden;
+  position: relative;
+}
+.work-thumb img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transition: transform .4s ease;
+}
+.work-card:hover .work-thumb img { transform: scale(1.04); }
+
+/* ホバー時のオーバーレイ */
+.work-overlay {
+  position: absolute; inset: 0;
+  background: rgba(14,13,19,.72);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 12px;
+  opacity: 0;
+  transition: opacity .25s ease;
+}
+.work-card:hover .work-overlay { opacity: 1; }
+.overlay-dl {
+  font-family: var(--mono);
+  font-size: .7rem;
+  letter-spacing: .15em;
+  padding: 8px 20px;
+  border: 1.5px solid var(--paper);
+  color: var(--paper);
+  text-transform: uppercase;
+  transition: background .15s, color .15s;
+}
+.overlay-dl:hover { background: var(--paper); color: var(--ink); }
+
+.work-meta {
+  padding: 14px 16px 18px;
+  border-top: 1.5px solid var(--ink);
+}
+.work-cat {
+  font-family: var(--mono); font-size: .62rem; letter-spacing: .15em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 4px;
+}
+.work-title { font-family: var(--disp); font-size: .95rem; font-weight: 700; }
+.work-date { font-family: var(--mono); font-size: .68rem; color: var(--muted); margin-top: 2px; }
+
+/* 音楽カード */
+.work-card[data-cat="music"] .work-thumb {
+  aspect-ratio: 1;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--indigo);
+}
+.music-placeholder {
+  font-family: var(--mono);
+  font-size: .72rem;
+  letter-spacing: .2em;
+  color: rgba(242,237,228,.4);
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+}
+.music-wave {
+  display: flex; gap: 3px; align-items: flex-end; height: 32px;
+}
+.music-wave span {
+  width: 4px;
+  background: var(--cyan);
+  animation: wave-bar 1.4s ease-in-out infinite;
+}
+.music-wave span:nth-child(2) { animation-delay: .2s; }
+.music-wave span:nth-child(3) { animation-delay: .4s; }
+.music-wave span:nth-child(4) { animation-delay: .1s; }
+.music-wave span:nth-child(5) { animation-delay: .3s; }
+@keyframes wave-bar {
+  0%, 100% { height: 6px; }
+  50%       { height: 28px; }
+}
+
+/* 倉庫バナー */
+.warehouse-banner {
+  margin-top: 2px;
+  background: var(--ink);
+  padding: 32px;
+  display: flex; justify-content: space-between; align-items: center; gap: 24px;
+  flex-wrap: wrap;
+}
+.warehouse-banner p {
+  font-family: var(--mono); font-size: .82rem; letter-spacing: .08em;
+  color: rgba(242,237,228,.6);
+}
+.warehouse-banner p strong { color: var(--cyan); font-weight: 400; }
+
+/* ===== CONTACT ===== */
+#contact { background: var(--paper); border-top: 1.5px solid var(--ink); }
+.contact-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5px;
+  background: var(--ink);
+  margin-top: 0;
+}
+.contact-item {
+  background: var(--paper);
+  padding: 32px;
+  display: flex; flex-direction: column; justify-content: space-between;
+  min-height: 140px;
+  transition: background .2s;
+}
+.contact-item:hover { background: var(--yell); }
+.contact-item .ci-label {
+  font-family: var(--mono); font-size: .68rem; letter-spacing: .15em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+}
+.contact-item .ci-name {
+  font-family: var(--disp); font-size: 1.1rem; font-weight: 700; margin-bottom: 4px;
+}
+.contact-item .ci-handle { font-family: var(--mono); font-size: .8rem; color: var(--muted); }
+.contact-item .ci-arrow {
+  font-family: var(--mono); font-size: 1.4rem; margin-top: 16px;
+  transition: transform .2s;
+  display: inline-block;
+}
+.contact-item:hover .ci-arrow { transform: translateX(6px); }
+
+/* お問い合わせフォームメッセージ */
+.contact-msg-note {
+  margin-top: 32px;
+  font-size: .88rem;
+  color: var(--muted);
+  max-width: 520px;
+  line-height: 1.7;
+}
+
+/* ===== FOOTER ===== */
+footer {
+  background: var(--ink);
+  color: rgba(242,237,228,.4);
+  padding: 32px;
+}
+footer .inner {
+  max-width: 1100px; margin: 0 auto;
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 12px;
+}
+footer .f-mark { font-family: var(--mono); font-size: .7rem; letter-spacing: .15em; }
+footer .f-nav { display: flex; gap: 24px; list-style: none; }
+footer .f-nav a {
+  font-family: var(--mono); font-size: .7rem; letter-spacing: .12em;
+  color: rgba(242,237,228,.4); transition: color .2s;
+}
+footer .f-nav a:hover { color: var(--cyan); }
+
+/* ===== REVEAL ANIMATIONS ===== */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity .6s ease, transform .6s ease;
+}
+.reveal.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 840px) {
+  .profile-grid { grid-template-columns: 1fr; gap: 40px; }
+  .works-grid { grid-template-columns: repeat(2, 1fr); }
+  .contact-grid { grid-template-columns: 1fr; }
+  nav ul { gap: 20px; }
+}
+@media (max-width: 520px) {
+  .works-grid { grid-template-columns: 1fr; }
+  .hero-cta { flex-direction: column; }
+  .btn { justify-content: center; }
+  .warehouse-banner { flex-direction: column; }
+  .hero-bg-text { font-size: 5rem; right: -10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .music-wave span { animation: none; height: 14px; }
+}
+</style>
+</head>
+<body>
+
+<!-- カスタムカーソル -->
+<div id="cursor" aria-hidden="true">
+  <div class="ring"></div>
+  <div class="dot"></div>
+</div>
+
+<!-- ヘッダー -->
+<header>
+  <div class="inner">
+    <a href="index.html" class="logo">
+      <span class="mark" aria-hidden="true"></span>Mario
+    </a>
+    <nav>
+      <ul>
+        <li><a href="#profile">Profile</a></li>
+        <li><a href="#works">Works</a></li>
+        <li><a href="#contact">Contact</a></li>
+        <li><a href="warehouse.html">倉庫</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<!-- ヒーロー -->
+<section class="hero">
+  <div class="hero-bg-text" aria-hidden="true">WORKS</div>
+  <div class="hero-body">
+    <div class="hero-eyebrow">
+      <span class="tag">ILLUST</span><span class="tag">MUSIC</span>
+    </div>
+    <h1>
+      <span class="line-a">音と絵、</span>
+      <span class="line-b" data-txt="ふたつの間で。">ふたつの間で。</span>
+    </h1>
+    <p class="hero-desc">
+      イラストレーションと楽曲制作。<br>
+      Illustrator / Composer
+    </p>
+    <div class="hero-cta">
+      <a href="#works" class="btn solid">作品集を見る</a>
+      <a href="warehouse.html" class="btn">倉庫へ</a>
+    </div>
+  </div>
+  <div class="hero-strip" aria-hidden="true">
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
+</section>
+
+<!-- プロフィール -->
+<section id="profile">
+  <div class="wrap">
+    <div class="section-label">Profile</div>
+    <div class="profile-grid reveal">
+      <div class="profile-text">
+        <p>夜の時間を制作にあて、<strong>5年以上イラストと楽曲を並行</strong>して続けています。</p>
+          日本の電子音楽の系譜から強く影響を受け、コード進行や音響理論を探求。</p>
+        <p>イラストでは<strong>グリザイユを軸としたデジタル制作</strong>とデッサンを往復しながら、線と陰影の関係を問い続けています。対比と重ね刷りが自分の絵の核にあると思っています。</p>
+        <p>
+          <span class="kw">Cubase</span>
+          <span class="kw">Clip Studio Paint</span>
+      </div>
+      <div class="profile-panel">
+        <div class="profile-stat">
+          <span class="ps-label">主な活動</span>
+          <span class="ps-val">ILLUST / MUSIC</span>
+        </div>
+        <div class="profile-stat">
+          <span class="ps-label">制作歴</span>
+          <span class="ps-val">5 years+</span>
+        </div>
+        <div class="profile-stat">
+          <span class="ps-label">発表媒体</span>
+          <span class="ps-val">X / Niconico</span>
+        </div>
+        <div class="profile-stat">
+          <span class="ps-label">X (illustration)</span>
+          <span class="ps-val"><a href="https://x.com/Orima_Guitar" target="_blank" rel="noopener" style="color:var(--cyan)">@Orima_Guitar</a></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 作品集 -->
+<section id="works">
+  <div class="wrap">
+    <div class="section-label">Works — 代表作品</div>
+
+    <!-- フィルター -->
+    <div class="works-filter" role="group" aria-label="カテゴリ絞り込み">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="illust">Illustration</button>
+      <button class="filter-btn" data-filter="music">Music</button>
+    </div>
+  </div>
+
+  <!-- グリッド（wrap外 — フルブリード） -->
+  <div class="works-grid" id="worksGrid">
+
+    <!-- 作品1 -->
+    <article class="work-card reveal" data-cat="illust">
+      <div class="work-thumb">
+        <img src="images/イラスト4.png" alt="無題 #42" loading="lazy">
+        <div class="work-overlay">
+          <a class="overlay-dl" href="images/イラスト4.png" download="mario_hitonoko.png">Download PNG</a>
+        </div>
+      </div>
+      <div class="work-meta">
+        <div class="work-cat">Illustration</div>
+        <div class="work-title">人の子</div>
+        <div class="work-date">2025</div>
+      </div>
+    </article>
+
+    <!-- 作品2 -->
+    <article class="work-card reveal" data-cat="illust">
+      <div class="work-thumb">
+        <img src="images/イラスト62.png" alt="無題 #60" loading="lazy">
+        <div class="work-overlay">
+          <a class="overlay-dl" href="images/イラスト62.png" download="mario_illust60.png">Download PNG</a>
+        </div>
+      </div>
+      <div class="work-meta">
+        <div class="work-cat">Illustration</div>
+        <div class="work-title">石灯籠</div>
+        <div class="work-date">2026</div>
+      </div>
+    </article>
+
+    <!-- 作品3 -->
+    <article class="work-card reveal" data-cat="illust">
+      <div class="work-thumb">
+        <img src="images/イラスト42.png" alt="無題 #42" loading="lazy">
+        <div class="work-overlay">
+          <a class="overlay-dl" href="images/イラスト42.png" download="mario_illust42.png">Download PNG</a>
+        </div>
+      </div>
+      <div class="work-meta">
+        <div class="work-cat">Illustration</div>
+        <div class="work-title">シープ</div>
+        <div class="work-date">2026</div>
+      </div>
+    </article>
+
+    <!-- 作品4 -->
+    <article class="work-card reveal" data-cat="illust">
+      <div class="work-thumb">
+        <img src="images/イラスト70.png" alt="無題 #46" loading="lazy">
+        <div class="work-overlay">
+          <a class="overlay-dl" href="images/イラスト70.png" download="mario_illust46.png">Download PNG</a>
+        </div>
+      </div>
+      <div class="work-meta">
+        <div class="work-cat">Illustration</div>
+        <div class="work-title">タオル</div>
+        <div class="work-date">2026</div>
+      </div>
+    </article>
+
+
+    <!-- 作品5 -->
+    <article class="work-card reveal" data-cat="illust">
+      <div class="work-thumb">
+        <img src="images/イラスト60 3.png" alt="無題 #46" loading="lazy">
+        <div class="work-overlay">
+          <a class="overlay-dl" href="images/イラスト60 3.png" download="mario_illust46.png">Download PNG</a>
+        </div>
+      </div>
+      <div class="work-meta">
+        <div class="work-cat">Illustration</div>
+        <div class="work-title">月光</div>
+        <div class="work-date">2026</div>
+      </div>
+    </article>
+
+  <!-- 作品6 -->
+    <article class="work-card reveal" data-cat="illust">
+      <div class="work-thumb">
+        <img src="images/イラスト41 3.png" alt="無題 #46" loading="lazy">
+        <div class="work-overlay">
+          <a class="overlay-dl" href="images/イラスト41 3.png" download="mario_illust41.png">Download PNG</a>
+        </div>
+      </div>
+      <div class="work-meta">
+        <div class="work-cat">Illustration</div>
+        <div class="work-title">檸檬</div>
+        <div class="work-date">2026</div>
+      </div>
+    </article>
+    
+    <!-- 音楽サンプルカード 1 -->
+    <article class="work-card reveal" data-cat="music">
+      <div class="work-thumb">
+        <div class="music-placeholder">
+          <div class="music-wave">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <span>MUSIC</span>
+        </div>
+        <div class="work-overlay">
+          <!-- 音楽: mp3ダウンロードリンクをここに設定 -->
+          <a class="overlay-dl" href="#" download>Download MP3</a>
+        </div>
+      </div>
+      <div class="work-meta">
+        <div class="work-cat">Music</div>
+        <div class="work-title">（楽曲タイトル）</div>
+        <div class="work-date">20XX</div>
+      </div>
+    </article>
+
+ <!-- 音楽サンプルカード 2 -->
+    <article class="work-card reveal" data-cat="music">
+      <div class="work-thumb">
+        <div class="music-placeholder">
+          <div class="music-wave">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <span>MUSIC</span>
+        </div>
+        <div class="work-overlay">
+          <!-- 音楽: mp3ダウンロードリンクをここに設定 -->
+          <a class="overlay-dl" href="#" download>Download MP3</a>
+        </div>
+      </div>
+      <div class="work-meta">
+        <div class="work-cat">Music</div>
+        <div class="work-title">（楽曲タイトル）</div>
+        <div class="work-date">20XX</div>
+      </div>
+    </article>
+    
+ <!-- 音楽サンプルカード 3 -->
+    <article class="work-card reveal" data-cat="music">
+      <div class="work-thumb">
+        <div class="music-placeholder">
+          <div class="music-wave">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <span>MUSIC</span>
+        </div>
+        <div class="work-overlay">
+          <!-- 音楽: mp3ダウンロードリンクをここに設定 -->
+          <a class="overlay-dl" href="#" download>Download MP3</a>
+        </div>
+      </div>
+      <div class="work-meta">
+        <div class="work-cat">Music</div>
+        <div class="work-title">（楽曲タイトル）</div>
+        <div class="work-date">20XX</div>
+      </div>
+    </article>
+
+  </div><!-- /works-grid -->
+
+  <!-- 倉庫へのバナー -->
+  <div class="wrap">
+    <div class="warehouse-banner reveal">
+      <p>過去作・習作・ラフなど雑多な作品は<strong>倉庫</strong>にまとめています。</p>
+      <a href="warehouse.html" class="btn" style="border-color:rgba(242,237,228,.4); color:rgba(242,237,228,.7);">倉庫を開く →</a>
+    </div>
+  </div>
+</section>
+
+<!-- コンタクト -->
+<section id="contact">
+  <div class="wrap">
+    <div class="section-label">Contact</div>
+    <div class="contact-grid">
+      <a class="contact-item" href="https://x.com/Orima_Guitar" target="_blank" rel="noopener">
+        <div>
+          <div class="ci-label">Illustration / X</div>
+          <div class="ci-name">@Orima_Guitar</div>
+          <div class="ci-handle">イラストの投稿・お問い合わせはこちら</div>
+        </div>
+        <span class="ci-arrow">→</span>
+      </a>
+      <a class="contact-item" href="https://garage.nicovideo.jp/niconico-garage/video/videos?cmnhd_ref=device%3Dpc%26site%3Dniconico%26pos%3Duserpanel%26page%3Dvideo_top" target="_blank" rel="noopener">
+        <div>
+          <div class="ci-label">Music / Niconico</div>
+          <div class="ci-name">Niconico動画</div>
+          <div class="ci-handle">楽曲はマイページにて公開中</div>
+        </div>
+        <span class="ci-arrow">→</span>
+      </a>
+    </div>
+    <p class="contact-msg-note reveal">
+      お仕事のご相談・コラボのお誘い・その他のご連絡は X の DM からどうぞ。
+    </p>
+  </div>
+</section>
+s
+<!-- フッター -->
+<footer>
+  <div class="inner">
+    <span class="f-mark">© まりお — all works reserved</span>
+    <ul class="f-nav">
+      <li><a href="#profile">Profile</a></li>
+      <li><a href="#works">Works</a></li>
+      <li><a href="#contact">Contact</a></li>
+      <li><a href="warehouse.html">倉庫</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script>
+/* ==============================
+   CUSTOM CURSOR
+============================== */
+const cursor = document.getElementById('cursor');
+const ring   = cursor.querySelector('.ring');
+const dot    = cursor.querySelector('.dot');
+let cx = -100, cy = -100;
+let rx = -100, ry = -100;
+
+document.addEventListener('mousemove', e => {
+  cx = e.clientX; cy = e.clientY;
+  dot.style.left = cx + 'px';
+  dot.style.top  = cy + 'px';
+});
+
+// リングを少し遅延させて追随
+(function lerpRing() {
+  rx += (cx - rx) * .12;
+  ry += (cy - ry) * .12;
+  ring.style.left = rx + 'px';
+  ring.style.top  = ry + 'px';
+  requestAnimationFrame(lerpRing);
+})();
+
+// リンク・ボタン上でリング拡大
+document.querySelectorAll('a, button, .filter-btn').forEach(el => {
+  el.addEventListener('mouseenter', () => document.body.classList.add('hover-link'));
+  el.addEventListener('mouseleave', () => document.body.classList.remove('hover-link'));
+});
+
+/* ==============================
+   CLICK BURST
+============================== */
+const BURST_COLORS = ['#d63c1e','#1aa6b0','#e8d32e','#2b2b8a'];
+document.addEventListener('click', e => {
+  const el = document.createElement('div');
+  el.className = 'burst';
+  el.style.left  = e.clientX + 'px';
+  el.style.top   = e.clientY + 'px';
+  const c = BURST_COLORS[Math.floor(Math.random() * BURST_COLORS.length)];
+  el.style.background = c;
+  el.style.opacity = '.5';
+  document.body.appendChild(el);
+  el.addEventListener('animationend', () => el.remove());
+});
+
+/* ==============================
+   WORKS FILTER
+============================== */
+const filterBtns = document.querySelectorAll('.filter-btn');
+const workCards  = document.querySelectorAll('#worksGrid .work-card');
+
+filterBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    filterBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const f = btn.dataset.filter;
+    workCards.forEach(card => {
+      card.hidden = (f !== 'all' && card.dataset.cat !== f);
+    });
+  });
+});
+
+/* ==============================
+   REVEAL ON SCROLL
+============================== */
+const revealEls = document.querySelectorAll('.reveal');
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('in-view');
+      io.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.12 });
+revealEls.forEach(el => io.observe(el));
+
+/* ==============================
+   MOBILE: カーソル非表示
+============================== */
+if (window.matchMedia('(hover: none)').matches) {
+  cursor.style.display = 'none';
+  document.body.style.cursor = 'auto';
+}
+</script>
+
+</body>
+</html>
