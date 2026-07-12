@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>倉庫 — Mario</title>
+<meta name="description" content="過去作・習作をまとめた倉庫。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Noto+Sans+JP:wght@300;400;500&family=Unbounded:wght@300;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:   #0e0d13;
+  --paper: #f2ede4;
+  --red:   #d63c1e;
+  --cyan:  #1aa6b0;
+  --yell:  #e8d32e;
+  --indigo:#2b2b8a;
+  --muted: #6a6472;
+  --rule:  rgba(14,13,19,.12);
+  --disp:  'Unbounded', sans-serif;
+  --body:  'Noto Sans JP', sans-serif;
+  --mono:  'Space Mono', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  line-height: 1.75;
+  cursor: none;
+  overflow-x: hidden;
+}
+a { color: inherit; text-decoration: none; }
+img { display: block; max-width: 100%; }
+button, select, input { font: inherit; }
+button { cursor: none; border: none; background: none; }
+::selection { background: var(--red); color: var(--paper); }
+
+#cursor { position: fixed; top:0; left:0; pointer-events:none; z-index:9999; }
+#cursor .ring {
+  position:absolute; width:32px; height:32px;
+  border:2px solid var(--ink); border-radius:50%;
+  transform: translate(-50%,-50%);
+  transition: width .18s, height .18s, border-color .18s, background .18s;
+  mix-blend-mode: multiply;
+}
+#cursor .dot {
+  position:absolute; width:6px; height:6px;
+  background: var(--red); border-radius:50%;
+  transform: translate(-50%,-50%);
+}
+body.hover-link #cursor .ring {
+  width:48px; height:48px; border-color: var(--red);
+  background: rgba(214,60,30,.08);
+}
+.burst {
+  position: fixed; pointer-events:none; z-index:9998;
+  border-radius:50%; width:8px; height:8px;
+  transform: translate(-50%,-50%) scale(1);
+  animation: burst-anim .45s ease-out forwards;
+}
+@keyframes burst-anim {
+  0%   { transform: translate(-50%,-50%) scale(1); opacity:1; }
+  100% { transform: translate(-50%,-50%) scale(9); opacity:0; }
+}
+
+.wrap { max-width: 1100px; margin: 0 auto; padding: 0 32px; }
+
+header {
+  position: fixed; top:0; left:0; right:0; z-index:200;
+  background: var(--paper);
+  border-bottom: 1.5px solid var(--ink);
+  height: 60px;
+}
+header .inner {
+  display:flex; align-items:center; justify-content:space-between;
+  max-width:1100px; margin:0 auto; padding:0 32px; height:100%;
+}
+.logo {
+  font-family: var(--mono); font-size:.82rem; font-weight:700;
+  letter-spacing:.18em; text-transform:uppercase;
+  display:flex; align-items:center;
+}
+.logo .mark {
+  display:inline-block; width:20px; height:20px;
+  border:2px solid var(--red); border-radius:50%;
+  margin-right:8px; position:relative;
+}
+.logo .mark::after {
+  content:""; position:absolute; inset:3px;
+  background: var(--red); border-radius:50%;
+}
+nav ul { list-style:none; display:flex; gap:32px; }
+nav a {
+  font-family: var(--mono); font-size:.7rem; letter-spacing:.15em;
+  text-transform:uppercase; color: var(--muted);
+  padding-bottom:2px; border-bottom:1.5px solid transparent;
+  transition: color .2s, border-color .2s;
+}
+nav a:hover { color: var(--ink); border-bottom-color: var(--red); }
+nav a.current { color: var(--ink); border-bottom-color: var(--ink); }
+
+.wh-hero {
+  padding: 140px 0 60px;
+}
+.wh-hero .section-label {
+  font-family: var(--mono); font-size:.68rem; letter-spacing:.25em;
+  text-transform:uppercase; color: var(--muted);
+  display:flex; align-items:center; gap:12px; margin-bottom:24px;
+}
+.wh-hero .section-label::after { content:""; flex:1; height:1px; background: var(--rule); }
+.wh-hero h1 {
+  font-family: var(--disp); font-size:clamp(2rem, 5vw, 3.2rem);
+  font-weight:700; letter-spacing:-.02em; margin-bottom:16px;
+}
+.wh-hero p { color: var(--muted); max-width: 560px; }
+
+.wh-controls {
+  display:flex; flex-wrap:wrap; gap:12px; align-items:center;
+  margin: 32px 0 8px;
+  padding-bottom: 24px;
+  border-bottom: 1.5px solid var(--ink);
+}
+.wh-search {
+  flex: 1 1 240px;
+  padding: 10px 16px;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  font-family: var(--body);
+  font-size: .88rem;
+}
+.wh-search:focus { outline: 2px solid var(--red); outline-offset: 2px; }
+.wh-sort {
+  padding: 10px 14px;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  font-family: var(--mono);
+  font-size: .74rem;
+  letter-spacing: .05em;
+}
+.works-filter { display:flex; gap:2px; flex-wrap:wrap; }
+.filter-btn {
+  font-family: var(--mono); font-size:.7rem; letter-spacing:.15em;
+  padding:9px 20px; border:1.5px solid var(--ink);
+  text-transform:uppercase; color: var(--muted);
+  transition: background .15s, color .15s;
+}
+.filter-btn.active, .filter-btn:hover { background: var(--ink); color: var(--paper); }
+
+.wh-count {
+  font-family: var(--mono); font-size:.72rem; letter-spacing:.08em;
+  color: var(--muted); margin: 20px 32px 0;
+}
+
+.works-grid {
+  display:grid; grid-template-columns: repeat(3, 1fr);
+  gap:1.5px; background: var(--ink);
+  margin-top: 20px;
+}
+.work-card { background: var(--paper); overflow:hidden; position:relative; cursor:none; }
+.work-card[hidden] { display:none; }
+.work-thumb { width:100%; aspect-ratio:1; overflow:hidden; position:relative; }
+.work-thumb img { width:100%; height:100%; object-fit:cover; transition: transform .4s ease; }
+.work-card:hover .work-thumb img { transform: scale(1.04); }
+.work-overlay {
+  position:absolute; inset:0; background: rgba(14,13,19,.72);
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; transition: opacity .25s ease;
+}
+.work-card:hover .work-overlay { opacity:1; }
+.overlay-dl {
+  font-family: var(--mono); font-size:.7rem; letter-spacing:.15em;
+  padding:8px 20px; border:1.5px solid var(--paper); color: var(--paper);
+  text-transform:uppercase; transition: background .15s, color .15s;
+}
+.overlay-dl:hover { background: var(--paper); color: var(--ink); }
+.work-meta { padding:14px 16px 18px; border-top:1.5px solid var(--ink); }
+.work-cat { font-family: var(--mono); font-size:.62rem; letter-spacing:.15em; text-transform:uppercase; color: var(--muted); margin-bottom:4px; }
+.work-title { font-family: var(--disp); font-size:.95rem; font-weight:700; }
+.work-date { font-family: var(--mono); font-size:.68rem; color: var(--muted); margin-top:2px; }
+
+.music-thumb {
+  display:flex; align-items:center; justify-content:center;
+  background: var(--indigo);
+}
+.music-wave { display:flex; gap:3px; align-items:flex-end; height:32px; }
+.music-wave span { width:4px; background: var(--cyan); animation: wave-bar 1.4s ease-in-out infinite; }
+.music-wave span:nth-child(2){animation-delay:.2s;}
+.music-wave span:nth-child(3){animation-delay:.4s;}
+.music-wave span:nth-child(4){animation-delay:.1s;}
+.music-wave span:nth-child(5){animation-delay:.3s;}
+@keyframes wave-bar { 0%,100%{height:6px;} 50%{height:28px;} }
+
+.work-audio { width:100%; margin-top:10px; height:32px; }
+.work-download {
+  display:inline-block; margin-top:8px;
+  font-family: var(--mono); font-size:.68rem; letter-spacing:.1em;
+  color: var(--cyan); border-bottom: 1px solid var(--cyan);
+}
+
+.wh-loadmore {
+  display:flex; justify-content:center; margin: 48px 0 0;
+}
+.loadmore-btn {
+  font-family: var(--mono); font-size:.75rem; letter-spacing:.12em;
+  padding:14px 40px; border:2px solid var(--ink);
+  text-transform:uppercase; transition: background .2s, color .2s;
+}
+.loadmore-btn:hover { background: var(--ink); color: var(--paper); }
+.loadmore-btn[hidden] { display:none; }
+
+.wh-empty {
+  padding: 80px 32px; text-align:center; color: var(--muted);
+  font-family: var(--mono); font-size:.85rem; letter-spacing:.05em;
+}
+
+footer {
+  background: var(--ink); color: rgba(242,237,228,.4); padding:32px; margin-top:80px;
+}
+footer .inner {
+  max-width:1100px; margin:0 auto; display:flex;
+  justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;
+}
+footer .f-mark { font-family: var(--mono); font-size:.7rem; letter-spacing:.15em; }
+footer .f-nav { display:flex; gap:24px; list-style:none; }
+footer .f-nav a {
+  font-family: var(--mono); font-size:.7rem; letter-spacing:.12em;
+  color: rgba(242,237,228,.4); transition: color .2s;
+}
+footer .f-nav a:hover { color: var(--cyan); }
+
+@media (max-width: 840px) {
+  .works-grid { grid-template-columns: repeat(2,1fr); }
+  nav ul { gap:20px; }
+}
+@media (max-width: 520px) {
+  .works-grid { grid-template-columns: 1fr; }
+  .wh-controls { flex-direction:column; align-items:stretch; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior:auto; }
+  .music-wave span { animation:none; height:14px; }
+}
+</style>
+</head>
+<body>
+
+<div id="cursor" aria-hidden="true">
+  <div class="ring"></div>
+  <div class="dot"></div>
+</div>
+
+<header>
+  <div class="inner">
+    <a href="index.html" class="logo">
+      <span class="mark" aria-hidden="true"></span>Mario
+    </a>
+    <nav>
+      <ul>
+        <li><a href="index.html#profile">Profile</a></li>
+        <li><a href="index.html#works">Works</a></li>
+        <li><a href="index.html#contact">Contact</a></li>
+        <li><a href="warehouse.html" class="current">倉庫</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<section class="wh-hero">
+  <div class="wrap">
+    <div class="section-label">Warehouse</div>
+    <h1>倉庫</h1>
+    <p>過去作・習作・ラフなど、雑多な作品をまとめています。</p>
+    <p>画像はJPEGで、音楽はmp3/wav/FLACでダウンロードできます。</p>
+
+    <div class="wh-controls">
+      <input type="text" class="wh-search" id="whSearch" placeholder="タイトルで検索…" aria-label="タイトルで検索">
+      <select class="wh-sort" id="whSort" aria-label="並び替え">
+        <option value="new">新しい順</option>
+        <option value="old">古い順</option>
+        <option value="title">タイトル順</option>
+      </select>
+      <div class="works-filter" role="group" aria-label="カテゴリ絞り込み">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="illust">Illustration</button>
+        <button class="filter-btn" data-filter="music">Music</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="wh-count" id="whCount"></div>
+  <div class="works-grid" id="whGrid"></div>
+  <div class="wh-empty" id="whEmpty" hidden>該当する作品がありません。</div>
+
+  <div class="wh-loadmore">
+    <button class="loadmore-btn" id="whLoadMore">もっと見る</button>
+  </div>
+</section>
+
+<footer>
+  <div class="inner">
+    <span class="f-mark">© Mario — all works reserved</span>
+    <ul class="f-nav">
+      <li><a href="index.html#profile">Profile</a></li>
+      <li><a href="index.html#works">Works</a></li>
+      <li><a href="index.html#contact">Contact</a></li>
+      <li><a href="warehouse.html">倉庫</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script>
+/* ==========================================================
+   倉庫の作品データ
+   ここに作品を追加・削除・編集してください。
+   イラスト: type:'illust', src には画像ファイルへの相対パス
+   音楽    : type:'music',  src には音声ファイル(mp3/wav/flac)への相対パス
+   date は "YYYY-MM-DD" 形式推奨(並び替えが正しく機能します)
+========================================================== */
+const WAREHOUSE_ITEMS = [
+  // --- サンプル(非表示。コピーして新しい作品を作る時のひな形として使う) ---
+  {
+    type: 'illust',
+    title: '習作 サンプル',
+    date: '2023-01-01',
+    src: 'warehouse-files/images/sample.jpg',
+    enabled: false        // ← これを追加。false のときは表示されない
+  },
+  {
+    type: 'music',
+    title: '未発表曲 サンプル',
+    date: '2023-02-01',
+    src: 'warehouse-files/audio/sample.mp3',
+    enabled: false        // ← 同じく追加
+  },
+  // --- ここに新しい作品を追加していく 
+  { type: 'illust', title: '涅槃', date: '2026-01-16', src: 'warehouse-files/images/イラスト75.png' },
+  { type: 'illust', title: '林檎', date: '2025-07-05', src: 'warehouse-files/images/イラスト19.png' },
+  { type: 'illust', title: 'ラボルト', date: '2026-01-08', src: 'warehouse-files/images/イラスト65.jpg' },
+  { type: 'illust',  title: 'ラボルト2',   date: '2026-01-08', src: 'warehouse-files/images/イラスト65 2.jpg'  },
+  { type: 'illust', title: 'マルス', date: '2026-01-14', src: 'warehouse-files/images/イラスト69 3.jpg' },
+  { type: 'illust', title: '夕焼け', date: '2026-04-27', src: 'warehouse-files/images/イラスト45 2.png' },
+  { type: 'illust', title: '朝', date: '2026-04-27', src: 'warehouse-files/images/イラスト45 3.jpg' },
+  { type: 'illust', title: '椅子', date: '2026-04-20', src: 'warehouse-files/images/イラスト43.png' },
+  { type: 'illust', title: 'Perspective', date: '2025-07-22', src: 'warehouse-files/images/イラスト27.png' },
+  { type: 'illust', title: 'ひまわり', date: '2025-08-16', src: 'warehouse-files/images/イラスト34.png' },
+  { type: 'illust', title: '極彩色', date: '2025-12-31', src: 'warehouse-files/images/イラスト61 2.png' },
+  { type: 'illust', title: '補色2', date: '2025-12-31', src: 'warehouse-files/images/イラスト61.png' },
+  { type: 'illust', title: 'キューブ', date: '2026-01-14', src: 'warehouse-files/images/イラスト71.png' },
+  { type: 'illust', title: '天使', date: '2026-01-20', src: 'warehouse-files/images/イラスト1 2.jpg' },
+  { type: 'illust', title: '書き出し', date: '2026-01-20', src: 'warehouse-files/images/イラスト1 1.jpg' },
+  { type: 'illust', title: '手', date: '2025-08-05', src: 'warehouse-files/images/イラスト32.png' },
+  { type: 'illust', title: 'アリアス', date: '2026-05-19', src: 'warehouse-files/images/2イラスト61.png' },
+  { type: 'illust', title: '', date: '2026-05-17', src: 'warehouse-files/images/イラスト57.png' },
+  { type: 'illust', title: 'タオル', date: '2026-06-17', src: 'warehouse-files/images/イラスト70.png' },
+  { type: 'illust', title: '', date: '2026-05-18', src: 'warehouse-files/images/イラスト60 4.png' },
+  { type: 'illust', title: '月光', date: '2026-05-18', src: 'warehouse-files/images/イラスト60 3.png' },
+  { type: 'illust', title: '陽光', date: '2026-05-18', src: 'warehouse-files/images/イラスト60.png' },
+  { type: 'illust', title: '洗濯ばさみ', date: '2026-06-01', src: 'warehouse-files/images/イラスト68.png' },
+  { type: 'illust', title: '補色1', date: '2025-12-31', src: 'warehouse-files/images/イラスト59.png' },
+  { type: 'illust', title: '', date: '2026-05-18', src: 'warehouse-files/images/イラスト62 2.png' },
+  { type: 'illust', title: '', date: '2026-05-18', src: 'warehouse-files/images/イラスト62 3.png' },
+  { type: 'illust', title: '石灯籠', date: '2026-05-18', src: 'warehouse-files/images/イラスト62.png' },
+  { type: 'illust', title: '', date: '2026-06-05', src: 'warehouse-files/images/イラスト68 4.png' },
+  { type: 'illust', title: '', date: '2026-06-05', src: 'warehouse-files/images/イラスト68 1.png' },
+  { type: 'illust', title: '', date: '2026-06-05', src: 'warehouse-files/images/イラスト68 2.png' },
+  { type: 'illust', title: '', date: '2026-06-05', src: 'warehouse-files/images/イラスト68 3.png' },
+  { type: 'illust', title: 'ラボルト', date: '2026-05-27', src: 'warehouse-files/images/イラスト64 5.png' },
+  { type: 'illust', title: '', date: '2026-05-27', src: 'warehouse-files/images/イラスト64 3.png' },
+  { type: 'illust', title: '書き出し', date: '2026-05-27', src: 'warehouse-files/images/イラスト64 2.png' },
+  { type: 'illust', title: '花', date: '2026-06-30', src: 'warehouse-files/images/2イラスト71.png' },
+  { type: 'illust', title: '', date: '2026-05-06', src: 'warehouse-files/images/イラスト51.png' },
+  { type: 'illust', title: '通路', date: '2026-05-12', src: 'warehouse-files/images/イラスト56.png' },
+  { type: 'illust', title: '二色', date: '2026-01-28', src: 'warehouse-files/images/イラスト6 4.jpg' },
+  { type: 'illust', title: '', date: '2026-01-28', src: 'warehouse-files/images/イラスト6.jpg' },
+  { type: 'music',  title: '曲E',   date: '2024-03-01', src: 'warehouse-files/audio/e.wav'  },
+  // 何個続けても大丈夫。最後のオブジェクトの後にカンマがなければOK
+];
+
+/* ========================================================== */
+
+const grid       = document.getElementById('whGrid');
+const emptyMsg    = document.getElementById('whEmpty');
+const countLabel  = document.getElementById('whCount');
+const loadMoreBtn = document.getElementById('whLoadMore');
+const searchInput = document.getElementById('whSearch');
+const sortSelect  = document.getElementById('whSort');
+const filterBtns  = document.querySelectorAll('.works-filter .filter-btn');
+
+const PAGE_SIZE = 18;
+let currentFilter = 'all';
+let currentSort   = 'new';
+let currentQuery  = '';
+let shownCount    = PAGE_SIZE;
+
+function getFileName(path) {
+  return path.split('/').pop();
+}
+
+function cardHTML(item) {
+  const fileName = getFileName(item.src);
+  if (item.type === 'music') {
+    return `
+      <article class="work-card" data-cat="music">
+        <div class="work-thumb music-thumb">
+          <div class="music-wave"><span></span><span></span><span></span><span></span><span></span></div>
+        </div>
+        <div class="work-meta">
+          <div class="work-cat">Music</div>
+          <div class="work-title">${item.title}</div>
+          <div class="work-date">${item.date}</div>
+          <audio class="work-audio" controls preload="none" src="${item.src}"></audio>
+          <a class="work-download" href="${item.src}" download="${fileName}">ダウンロード</a>
+        </div>
+      </article>`;
+  }
+  return `
+    <article class="work-card" data-cat="illust">
+      <div class="work-thumb">
+        <img src="${item.src}" alt="${item.title}" loading="lazy">
+        <div class="work-overlay">
+          <a class="overlay-dl" href="${item.src}" download="${fileName}">Download</a>
+        </div>
+      </div>
+      <div class="work-meta">
+        <div class="work-cat">Illustration</div>
+        <div class="work-title">${item.title}</div>
+        <div class="work-date">${item.date}</div>
+      </div>
+    </article>`;
+}
+
+function getFiltered() {
+  let items = WAREHOUSE_ITEMS.filter(i => i.enabled !== false);   // ← この行に差し替え
+
+  if (currentFilter !== 'all') {
+    items = items.filter(i => i.type === currentFilter);
+  }
+  if (currentQuery.trim() !== '') {
+    const q = currentQuery.trim().toLowerCase();
+    items = items.filter(i => i.title.toLowerCase().includes(q));
+  }
+
+  items.sort((a, b) => {
+    if (currentSort === 'title') return a.title.localeCompare(b.title, 'ja');
+    const da = new Date(a.date), db = new Date(b.date);
+    if (currentSort === 'old') return da - db;
+    return db - da; // 'new' default
+  });
+
+  return items;
+}
+
+function render() {
+  const filtered = getFiltered();
+  const visible = filtered.slice(0, shownCount);
+
+  grid.innerHTML = visible.map(cardHTML).join('');
+  emptyMsg.hidden = filtered.length !== 0;
+  countLabel.textContent = `全 ${filtered.length} 件中 ${visible.length} 件を表示`;
+  loadMoreBtn.hidden = visible.length >= filtered.length;
+}
+
+filterBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    filterBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    shownCount = PAGE_SIZE;
+    render();
+  });
+});
+
+searchInput.addEventListener('input', e => {
+  currentQuery = e.target.value;
+  shownCount = PAGE_SIZE;
+  render();
+});
+
+sortSelect.addEventListener('change', e => {
+  currentSort = e.target.value;
+  shownCount = PAGE_SIZE;
+  render();
+});
+
+loadMoreBtn.addEventListener('click', () => {
+  shownCount += PAGE_SIZE;
+  render();
+});
+
+render();
+
+/* ==============================
+   カスタムカーソル & クリックバースト
+============================== */
+const cursor = document.getElementById('cursor');
+const ring   = cursor.querySelector('.ring');
+const dot    = cursor.querySelector('.dot');
+let cx = -100, cy = -100, rx = -100, ry = -100;
+
+document.addEventListener('mousemove', e => {
+  cx = e.clientX; cy = e.clientY;
+  dot.style.left = cx + 'px';
+  dot.style.top  = cy + 'px';
+});
+(function lerpRing() {
+  rx += (cx - rx) * .12;
+  ry += (cy - ry) * .12;
+  ring.style.left = rx + 'px';
+  ring.style.top  = ry + 'px';
+  requestAnimationFrame(lerpRing);
+})();
+
+document.body.addEventListener('mouseover', e => {
+  if (e.target.closest('a, button, .filter-btn')) {
+    document.body.classList.add('hover-link');
+  }
+});
+document.body.addEventListener('mouseout', e => {
+  if (e.target.closest('a, button, .filter-btn')) {
+    document.body.classList.remove('hover-link');
+  }
+});
+
+const BURST_COLORS = ['#d63c1e','#1aa6b0','#e8d32e','#2b2b8a'];
+document.addEventListener('click', e => {
+  const el = document.createElement('div');
+  el.className = 'burst';
+  el.style.left = e.clientX + 'px';
+  el.style.top  = e.clientY + 'px';
+  el.style.background = BURST_COLORS[Math.floor(Math.random() * BURST_COLORS.length)];
+  el.style.opacity = '.5';
+  document.body.appendChild(el);
+  el.addEventListener('animationend', () => el.remove());
+});
+
+if (window.matchMedia('(hover: none)').matches) {
+  cursor.style.display = 'none';
+  document.body.style.cursor = 'auto';
+}
+</script>
+
+</body>
+</html>
